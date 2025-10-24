@@ -17,7 +17,7 @@ COPY src src
 RUN mvn clean package -DskipTests
 
 # Exponer el puerto (Railway inyectará el puerto correcto)
-EXPOSE $PORT
+EXPOSE 8090
 
 # Comando para ejecutar la aplicación
 CMD ["java", "-jar", "target/pet_store-0.0.1-SNAPSHOT.jar"]
