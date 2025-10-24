@@ -18,6 +18,13 @@ target/
 *.iws
 *.iml
 *.ipr
+### Env ###
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
 
 ### NetBeans ###
 /nbproject/private/
