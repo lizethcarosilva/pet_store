@@ -58,10 +58,14 @@ public class UserController {
     // CREATE - Crear un nuevo usuario
     @PostMapping("/create")
     @Operation(summary = "Crear un nuevo usuario", description = "El password se encripta automáticamente")
-    @RequiresRole({"SuperAdmin", "Admin", "Gerente"})
     public ResponseEntity<?> createUser(@RequestBody UserCreateDto user) {
         try {
             String tenantId = TenantContext.getTenantId();
+            
+            // Si no hay tenantId en el contexto (usuario no autenticado), usar tenant por defecto
+            if (tenantId == null || tenantId.isEmpty()) {
+                tenantId = "1"; // Tenant por defecto para nuevos usuarios
+            }
             
             // Validar que no exista un usuario con el mismo email en este tenant
             Optional<User> existingUser = userService.getUserByEmailAndTenant(user.getCorreo(), tenantId);
