@@ -1,4 +1,4 @@
-# Multi-stage build para compilar y ejecutar
+# Dockerfile simplificado usando Maven directamente
 FROM openjdk:17-jdk-slim as builder
 
 # Instalar Maven
@@ -25,12 +25,12 @@ WORKDIR /app
 # Copiar el JAR compilado desde la etapa anterior
 COPY --from=builder /app/target/pet_store-0.0.1-SNAPSHOT.jar app.jar
 
-# Exponer el puerto (Railway usa la variable PORT)
+# Exponer el puerto
 EXPOSE 8090
 
-# Variables de entorno por defecto
+# Variables de entorno
 ENV SPRING_PROFILES_ACTIVE=prod
 ENV SERVER_PORT=8090
 
-# Comando para ejecutar la aplicación
+# Comando para ejecutar
 ENTRYPOINT ["java", "-jar", "app.jar"]
