@@ -1,0 +1,133 @@
+# ================================================
+# DOCKER COMPOSE PARA DESARROLLO LOCAL
+# ================================================
+# Este archivo facilita el desarrollo local con Docker
+# Uso: docker-compose up
+
+version: '3.8'
+
+services:
+  # Base de Datos PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    container_name: petstore-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: petstore
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - petstore-network
+
+  # Aplicación Pet Store
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: petstore-app
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    environment:
+      # Base de Datos
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: petstore
+      DB_USERNAME: postgres
+      DB_PASSWORD: password
+      # JPA Configuration
+      DDL_AUTO: update
+      SHOW_SQL: true
+      DEBUG: true
+      # Server
+      PORT: 8090
+      # Spring Profile
+      SPRING_PROFILES_ACTIVE: railway
+      # JWT (desarrollo)
+      JWT_SECRET: development_secret_key_for_local_testing_only_minimum_32_characters
+      JWT_EXPIRATION: 86400000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    networks:
+      - petstore-network
+
+  # PgAdmin (Opcional - para administrar la base de datos)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: petstore-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@petstore.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - petstore-network
+
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  petstore-network:
+    driver: bridge
+
+# ================================================
+# COMANDOS ÚTILES
+# ================================================
+# Iniciar servicios:
+#   docker-compose up
+#
+# Iniciar en background:
+#   docker-compose up -d
+#
+# Ver logs:
+#   docker-compose logs -f
+#   docker-compose logs -f app
+#
+# Detener servicios:
+#   docker-compose down
+#
+# Reconstruir imágenes:
+#   docker-compose up --build
+#
+# Limpiar todo (incluyendo volúmenes):
+#   docker-compose down -v
+#
+# Acceder a la base de datos:
+#   docker-compose exec postgres psql -U postgres -d petstore
+#
+# ================================================
+# URLs
+# ================================================
+# Aplicación: http://localhost:8090
+# Swagger UI: http://localhost:8090/swagger-ui.html
+# Health Check: http://localhost:8090/actuator/health
+# PgAdmin: http://localhost:5050
+#   Email: admin@petstore.com
+#   Password: admin
+

@@ -1,26 +1,55 @@
 # Ignorar archivos innecesarios en el build de Docker
-target/classes
-target/generated-sources
-target/generated-test-sources
-target/maven-status
-target/test-classes
-target/*.original
 
-# Archivos de desarrollo
-src/test
+# Maven
+target/
+!target/pet_store-0.0.1-SNAPSHOT.jar
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+.vscode/
 *.iml
-.idea
-.vscode
-*.log
+*.iws
+*.ipr
+.settings/
+.project
+.classpath
 
-# Archivos de sistema
+# Build
+build/
+out/
+dist/
+
+# Logs
+*.log
+logs/
+
+# OS
 .DS_Store
 Thumbs.db
 
-# Archivos de Git
-.git
+# Git
+.git/
 .gitignore
+.gitattributes
 
-# Documentación
+# Documentation
 *.md
 !README.md
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Test
+src/test/
+
+# Railway
+railway.json
+railway.toml
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
