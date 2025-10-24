@@ -145,10 +145,21 @@ https://tu-proyecto.railway.app
 
 ## 🆘 Si tienes problemas:
 
+### Error: "Permission denied" con mvnw
+Si ves el error `./mvnw: Permission denied`, el Dockerfile ya está arreglado con:
+```dockerfile
+RUN chmod +x ./mvnw
+```
+
+### Solución alternativa:
+Si el problema persiste, puedes usar el `Dockerfile.alternative` que usa Maven directamente en lugar del wrapper.
+
+### Otros problemas comunes:
 1. **Revisa los logs** en el dashboard de Railway
 2. **Verifica las variables de entorno**
 3. **Asegúrate de que el puerto sea dinámico** (usar `${PORT}`)
 4. **La base de datos debe estar creada** antes del despliegue
+5. **Verifica que Java 17 esté configurado** en el pom.xml
 
 ---
 

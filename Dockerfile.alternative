@@ -1,4 +1,4 @@
-# Dockerfile para Railway
+# Dockerfile alternativo para Railway
 FROM eclipse-temurin:17-jdk-alpine
 
 # Instalar Maven
@@ -9,17 +9,12 @@ WORKDIR /app
 
 # Copiar archivos de configuración de Maven
 COPY pom.xml .
-COPY mvnw .
-COPY .mvn .mvn
-
-# Dar permisos de ejecución al wrapper de Maven
-RUN chmod +x ./mvnw
 
 # Copiar código fuente
 COPY src src
 
-# Construir la aplicación
-RUN ./mvnw clean package -DskipTests
+# Construir la aplicación usando Maven directamente
+RUN mvn clean package -DskipTests
 
 # Exponer el puerto
 EXPOSE 8090
