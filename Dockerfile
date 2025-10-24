@@ -1,23 +1,14 @@
-# Dockerfile para Railway
-FROM eclipse-temurin:17-jdk-alpine
+# Usar OpenJDK 17 como imagen base
+FROM openjdk:17-jdk-slim
 
-# Instalar Maven
-RUN apk add --no-cache maven
-
-# Crear directorio de trabajo
+# Establecer directorio de trabajo
 WORKDIR /app
 
-# Copiar archivos de configuración de Maven
-COPY pom.xml .
+# Copiar el archivo JAR
+COPY target/pet_store-0.0.1-SNAPSHOT.jar app.jar
 
-# Copiar código fuente
-COPY src src
-
-# Construir la aplicación usando Maven directamente
-RUN mvn clean package -DskipTests
-
-# Exponer el puerto (Railway inyectará el puerto correcto)
+# Exponer el puerto
 EXPOSE 8090
 
 # Comando para ejecutar la aplicación
-CMD ["java", "-jar", "target/pet_store-0.0.1-SNAPSHOT.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
