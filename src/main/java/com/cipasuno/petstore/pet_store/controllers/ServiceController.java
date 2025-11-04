@@ -28,18 +28,10 @@ public class ServiceController {
     @Operation(summary = "Crear un nuevo servicio")
     public ResponseEntity<?> createService(@RequestBody ServiceCreateDto service) {
         try {
-            String tenantIdStr = TenantContext.getTenantId();
-            if (tenantIdStr == null || tenantIdStr.isEmpty()) {
+            String tenantId = TenantContext.getTenantId();
+            if (tenantId == null || tenantId.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Error: tenantId es requerido. Verifique que el header X-Tenant-ID esté presente.");
-            }
-
-            Integer tenantId;
-            try {
-                tenantId = Integer.parseInt(tenantIdStr);
-            } catch (NumberFormatException e) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Error: tenantId debe ser un número válido.");
             }
 
             // Validar código único

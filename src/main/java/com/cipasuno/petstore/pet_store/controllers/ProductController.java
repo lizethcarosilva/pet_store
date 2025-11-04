@@ -29,18 +29,10 @@ public class ProductController {
     @Operation(summary = "Crear un nuevo producto")
     public ResponseEntity<?> createProduct(@RequestBody ProductCreateDto product) {
         try {
-            String tenantIdStr = TenantContext.getTenantId();
-            if (tenantIdStr == null || tenantIdStr.isEmpty()) {
+            String tenantId = TenantContext.getTenantId();
+            if (tenantId == null || tenantId.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Error: tenantId es requerido. Verifique que el header X-Tenant-ID esté presente.");
-            }
-
-            Integer tenantId;
-            try {
-                tenantId = Integer.parseInt(tenantIdStr);
-            } catch (NumberFormatException e) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Error: tenantId debe ser un número válido.");
             }
 
             // Validar código único

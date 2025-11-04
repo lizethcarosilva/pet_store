@@ -20,7 +20,7 @@ public class ProductService {
     private ProductRepository productRepository;
 
     @Transactional
-    public ProductResponseDto createProduct(ProductCreateDto productDto, Integer tenantId) {
+    public ProductResponseDto createProduct(ProductCreateDto productDto, String tenantId) {
         Product product = new Product();
         product.setTenantId(tenantId);
         product.setCodigo(productDto.getCodigo());

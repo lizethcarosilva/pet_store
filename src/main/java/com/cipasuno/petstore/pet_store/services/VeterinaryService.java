@@ -18,7 +18,7 @@ public class VeterinaryService {
     private ServiceRepository serviceRepository;
 
     @Transactional
-    public ServiceResponseDto createService(ServiceCreateDto serviceDto, Integer tenantId) {
+    public ServiceResponseDto createService(ServiceCreateDto serviceDto, String tenantId) {
         Service service = new Service();
         service.setTenantId(tenantId);
         service.setCodigo(serviceDto.getCodigo());
