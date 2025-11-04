@@ -8,5 +8,5 @@ import com.cipasuno.petstore.pet_store.models.TenantUser;
 
 @Repository
 public interface TenantUserRepository extends JpaRepository<TenantUser, TenantUser.TenantUserId> {
-    List<TenantUser> findByUserId(Integer userId);
+    List<TenantUser> findByUserId(String userId);
 }

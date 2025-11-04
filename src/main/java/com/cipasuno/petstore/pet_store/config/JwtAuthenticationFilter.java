@@ -98,6 +98,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // No filtrar endpoints públicos
         return path.startsWith("/api/users/login") ||
                path.startsWith("/api/users/create") ||
+               path.startsWith("/api/admin/migrations") ||
+               path.startsWith("/api/auth/debug") ||
                path.startsWith("/swagger-ui") ||
                path.startsWith("/v3/api-docs") ||
                path.startsWith("/api-docs") ||

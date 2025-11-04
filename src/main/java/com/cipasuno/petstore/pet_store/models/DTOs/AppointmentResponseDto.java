@@ -17,8 +17,8 @@ public class AppointmentResponseDto {
     private String petNombre;
     private Integer serviceId;
     private String serviceName;
-    private Integer userId;
-    private String userName;
+    private Integer clientId;
+    private String clientName;
     private Integer veterinarianId;
     private String veterinarianName;
     private LocalDateTime fechaHora;

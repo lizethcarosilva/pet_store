@@ -1,5 +1,6 @@
 package com.cipasuno.petstore.pet_store.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -21,22 +22,26 @@ public class Appointment {
     private Integer appointmentId;
     
     @Column(name = "tenant_id", nullable = false)
-    private Integer tenantId;
+    private String tenantId;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pet_id", nullable = false)
+    @JsonIgnoreProperties({"owners", "hibernateLazyInitializer", "handler"})
     private Pet pet;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "service_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Service service;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false) // Usuario que agenda (cliente)
-    private User user;
+    @JoinColumn(name = "client_id", nullable = false) // Cliente que agenda la cita
+    @JsonIgnoreProperties({"pets", "hibernateLazyInitializer", "handler"})
+    private Client client;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "veterinarian_id") // Veterinario asignado (opcional)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private User veterinarian;
     
     @Column(name = "fecha_hora", nullable = false)

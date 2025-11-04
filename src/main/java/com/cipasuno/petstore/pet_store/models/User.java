@@ -3,8 +3,6 @@ package com.cipasuno.petstore.pet_store.models;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -48,9 +46,8 @@ public class User {
     @Column(name = "created_on", nullable = false, updatable = false)
     private LocalDateTime createdOn;
     
-    // Relación muchos a muchos con Pet a través de PetOwner
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<PetOwner> pets = new HashSet<>();
+    // NOTA: Las mascotas ahora se asocian con Client, no con User
+    // Ver el modelo Client para la relación con PetOwner
     
     // Este método se ejecuta ANTES de guardar en BD por primera vez
     @PrePersist

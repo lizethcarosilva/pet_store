@@ -1,7 +1,7 @@
 package com.cipasuno.petstore.pet_store.controllers;
 
-import com.cipasuno.petstore.pet_store.models.Roles;
 import com.cipasuno.petstore.pet_store.models.DTOs.RolesDto;
+import com.cipasuno.petstore.pet_store.models.DTOs.RoleResponseDto;
 import com.cipasuno.petstore.pet_store.services.RolesService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/roles")
@@ -22,15 +23,15 @@ public class RolesController {
 
     @GetMapping
     @Operation(summary = "Obtener todos los roles (excepto SUPERADMIN para usuarios normales)")
-    public ResponseEntity<List<Roles>> getAllRoles() {
-        List<Roles> roles = rolesService.getAllRoles();
+    public ResponseEntity<List<RoleResponseDto>> getAllRoles() {
+        List<RoleResponseDto> roles = rolesService.getAllRoles();
         return ResponseEntity.ok(roles);
     }
 
     @GetMapping("/active")
     @Operation(summary = "Obtener roles activos")
-    public ResponseEntity<List<Roles>> getActiveRoles() {
-        List<Roles> roles = rolesService.getActiveRoles();
+    public ResponseEntity<List<RoleResponseDto>> getActiveRoles() {
+        List<RoleResponseDto> roles = rolesService.getActiveRoles();
         return ResponseEntity.ok(roles);
     }
 
@@ -38,9 +39,9 @@ public class RolesController {
     @Operation(summary = "Obtener rol por ID")
     public ResponseEntity<?> getRoleById(@RequestBody RolesDto request) {
         try {
-            Roles role = rolesService.getRoleById(request.getRolId());
-            if (role != null) {
-                return ResponseEntity.ok(role);
+            Optional<RoleResponseDto> role = rolesService.getRoleById(request.getRolId());
+            if (role.isPresent()) {
+                return ResponseEntity.ok(role.get());
             } else {
                 return ResponseEntity.notFound().build();
             }

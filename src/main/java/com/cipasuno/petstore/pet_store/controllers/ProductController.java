@@ -1,5 +1,6 @@
 package com.cipasuno.petstore.pet_store.controllers;
 
+import com.cipasuno.petstore.pet_store.config.TenantContext;
 import com.cipasuno.petstore.pet_store.models.Product;
 import com.cipasuno.petstore.pet_store.models.DTOs.ProductCreateDto;
 import com.cipasuno.petstore.pet_store.models.DTOs.ProductResponseDto;
@@ -28,6 +29,20 @@ public class ProductController {
     @Operation(summary = "Crear un nuevo producto")
     public ResponseEntity<?> createProduct(@RequestBody ProductCreateDto product) {
         try {
+            String tenantIdStr = TenantContext.getTenantId();
+            if (tenantIdStr == null || tenantIdStr.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Error: tenantId es requerido. Verifique que el header X-Tenant-ID esté presente.");
+            }
+
+            Integer tenantId;
+            try {
+                tenantId = Integer.parseInt(tenantIdStr);
+            } catch (NumberFormatException e) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Error: tenantId debe ser un número válido.");
+            }
+
             // Validar código único
             Optional<ProductResponseDto> existingProduct = productService.getProductByCodigo(product.getCodigo());
             if (existingProduct.isPresent()) {
@@ -35,7 +50,7 @@ public class ProductController {
                     .body("Ya existe un producto con este código: " + product.getCodigo());
             }
 
-            ProductResponseDto createdProduct = productService.createProduct(product);
+            ProductResponseDto createdProduct = productService.createProduct(product, tenantId);
             return ResponseEntity.status(HttpStatus.CREATED).body(createdProduct);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -186,6 +201,27 @@ public class ProductController {
     @Operation(summary = "Contar productos con stock bajo")
     public ResponseEntity<Long> countLowStockProducts() {
         long count = productService.countLowStockProducts();
+        return ResponseEntity.ok(count);
+    }
+
+    @GetMapping("/vaccines")
+    @Operation(summary = "Obtener todas las vacunas registradas")
+    public ResponseEntity<List<ProductResponseDto>> getVaccineProducts() {
+        List<ProductResponseDto> vaccines = productService.getVaccineProducts();
+        return ResponseEntity.ok(vaccines);
+    }
+
+    @GetMapping("/vaccines/available")
+    @Operation(summary = "Obtener vacunas disponibles (con stock)")
+    public ResponseEntity<List<ProductResponseDto>> getAvailableVaccineProducts() {
+        List<ProductResponseDto> vaccines = productService.getAvailableVaccineProducts();
+        return ResponseEntity.ok(vaccines);
+    }
+
+    @GetMapping("/count/vaccines")
+    @Operation(summary = "Contar vacunas registradas")
+    public ResponseEntity<Long> countVaccineProducts() {
+        long count = productService.countVaccineProducts();
         return ResponseEntity.ok(count);
     }
 }

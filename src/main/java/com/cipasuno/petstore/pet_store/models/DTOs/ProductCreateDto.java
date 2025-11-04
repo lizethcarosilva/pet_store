@@ -21,5 +21,8 @@ public class ProductCreateDto {
     private Integer stock;
     private Integer stockMinimo;
     private LocalDate fechaVencimiento;
+    private String lote; // Número de lote
+    private String fabricante; // Fabricante o marca
+    private Boolean esVacuna; // Indica si es una vacuna
 }
 

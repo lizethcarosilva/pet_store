@@ -1,5 +1,6 @@
 package com.cipasuno.petstore.pet_store.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -22,18 +23,31 @@ public class InvoiceDetail {
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "invoice_id", nullable = false)
+    @JsonIgnoreProperties({"details", "client", "employee", "appointment", "hibernateLazyInitializer", "handler"})
     private Invoice invoice;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Product product;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "service_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Service service;
     
-    @Column(length = 10, nullable = false)
-    private String tipo; // PRODUCTO o SERVICIO
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "vaccination_id")
+    @JsonIgnoreProperties({"pet", "veterinarian", "medicalHistory", "hibernateLazyInitializer", "handler"})
+    private Vaccination vaccination; // Referencia a la vacunación que se está facturando
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "appointment_id")
+    @JsonIgnoreProperties({"pet", "client", "service", "veterinarian", "hibernateLazyInitializer", "handler"})
+    private Appointment appointment; // Referencia a la cita que se está facturando
+    
+    @Column(length = 15, nullable = false)
+    private String tipo; // PRODUCTO, SERVICIO, VACUNACION, CITA
     
     @Column(nullable = false)
     private Integer cantidad = 1;

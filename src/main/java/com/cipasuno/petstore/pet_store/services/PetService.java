@@ -1,19 +1,20 @@
 package com.cipasuno.petstore.pet_store.services;
 
+import com.cipasuno.petstore.pet_store.models.Client;
 import com.cipasuno.petstore.pet_store.models.Pet;
 import com.cipasuno.petstore.pet_store.models.PetOwner;
-import com.cipasuno.petstore.pet_store.models.User;
 import com.cipasuno.petstore.pet_store.models.DTOs.OwnerInfoDto;
 import com.cipasuno.petstore.pet_store.models.DTOs.PetCreateDto;
 import com.cipasuno.petstore.pet_store.models.DTOs.PetResponseDto;
 import com.cipasuno.petstore.pet_store.models.DTOs.UpdatePetRequest;
+import com.cipasuno.petstore.pet_store.repositories.ClientRepository;
 import com.cipasuno.petstore.pet_store.repositories.PetOwnerRepository;
 import com.cipasuno.petstore.pet_store.repositories.PetRepository;
-import com.cipasuno.petstore.pet_store.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -28,7 +29,7 @@ public class PetService {
     private PetOwnerRepository petOwnerRepository;
 
     @Autowired
-    private UserRepository userRepository;
+    private ClientRepository clientRepository;
 
     @Transactional
     public PetResponseDto createPet(PetCreateDto petDto) {
@@ -43,17 +44,17 @@ public class PetService {
 
         Pet savedPet = petRepository.save(pet);
 
-        // Crear relaciones con los dueños
+        // Crear relaciones con los dueños (ahora usando Client)
         if (petDto.getOwnerIds() != null && !petDto.getOwnerIds().isEmpty()) {
-            for (Integer ownerId : petDto.getOwnerIds()) {
-                User owner = userRepository.findById(ownerId)
-                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + ownerId));
+            for (Integer clientId : petDto.getOwnerIds()) {
+                Client client = clientRepository.findById(clientId)
+                    .orElseThrow(() -> new RuntimeException("Cliente no encontrado con ID: " + clientId));
                 
                 PetOwner petOwner = new PetOwner();
                 petOwner.setPet(savedPet);
-                petOwner.setUser(owner);
+                petOwner.setClient(client);
                 petOwner.getId().setPetId(savedPet.getPetId());
-                petOwner.getId().setUserId(ownerId);
+                petOwner.getId().setClientId(clientId);
                 
                 petOwnerRepository.save(petOwner);
             }
@@ -76,17 +77,17 @@ public class PetService {
 
         Pet savedPet = petRepository.save(pet);
 
-        // Crear relaciones con los dueños
+        // Crear relaciones con los dueños (ahora usando Client)
         if (petDto.getOwnerIds() != null && !petDto.getOwnerIds().isEmpty()) {
-            for (Integer ownerId : petDto.getOwnerIds()) {
-                User owner = userRepository.findById(ownerId)
-                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + ownerId));
+            for (Integer clientId : petDto.getOwnerIds()) {
+                Client client = clientRepository.findById(clientId)
+                    .orElseThrow(() -> new RuntimeException("Cliente no encontrado con ID: " + clientId));
                 
                 PetOwner petOwner = new PetOwner();
                 petOwner.setPet(savedPet);
-                petOwner.setUser(owner);
+                petOwner.setClient(client);
                 petOwner.getId().setPetId(savedPet.getPetId());
-                petOwner.getId().setUserId(ownerId);
+                petOwner.getId().setClientId(clientId);
                 
                 petOwnerRepository.save(petOwner);
             }
@@ -103,7 +104,8 @@ public class PetService {
     }
 
     public List<PetResponseDto> getAllPetsByTenant(String tenantId) {
-        return petRepository.findByTenantId(tenantId)
+        // Usar query optimizada sin JOIN FETCH para evitar N+1
+        return petRepository.findAllByTenantId(tenantId)
                 .stream()
                 .map(this::mapToResponseDto)
                 .collect(Collectors.toList());
@@ -216,25 +218,25 @@ public class PetService {
     }
 
     @Transactional
-    public void addOwnerToPet(Integer petId, Integer ownerId) {
+    public void addOwnerToPet(Integer petId, Integer clientId) {
         Pet pet = petRepository.findById(petId)
             .orElseThrow(() -> new RuntimeException("Mascota no encontrada con ID: " + petId));
         
-        User owner = userRepository.findById(ownerId)
-            .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + ownerId));
+        Client client = clientRepository.findById(clientId)
+            .orElseThrow(() -> new RuntimeException("Cliente no encontrado con ID: " + clientId));
         
         PetOwner petOwner = new PetOwner();
         petOwner.setPet(pet);
-        petOwner.setUser(owner);
+        petOwner.setClient(client);
         petOwner.getId().setPetId(petId);
-        petOwner.getId().setUserId(ownerId);
+        petOwner.getId().setClientId(clientId);
         
         petOwnerRepository.save(petOwner);
     }
 
     @Transactional
-    public void removeOwnerFromPet(Integer petId, Integer ownerId) {
-        PetOwner.PetOwnerId id = new PetOwner.PetOwnerId(petId, ownerId);
+    public void removeOwnerFromPet(Integer petId, Integer clientId) {
+        PetOwner.PetOwnerId id = new PetOwner.PetOwnerId(petId, clientId);
         petOwnerRepository.deleteById(id);
     }
 
@@ -276,6 +278,31 @@ public class PetService {
         return petRepository.countActivePets();
     }
 
+    /**
+     * Obtiene todos los propietarios de una mascota por su ID
+     */
+    public List<OwnerInfoDto> getOwnersByPetId(Integer petId) {
+        // Verificar que la mascota existe
+        if (!petRepository.existsById(petId)) {
+            throw new RuntimeException("Mascota no encontrada con ID: " + petId);
+        }
+        
+        return petOwnerRepository.findByPetId(petId)
+                .stream()
+                .filter(po -> po != null && po.getClient() != null) // Filtrar pet_owners huérfanos
+                .map(po -> {
+                    Client client = po.getClient();
+                    OwnerInfoDto ownerDto = new OwnerInfoDto();
+                    ownerDto.setUserId(client.getClientId()); // Ahora es clientId
+                    ownerDto.setName(client.getName());
+                    ownerDto.setIdent(client.getIdent());
+                    ownerDto.setTelefono(client.getTelefono());
+                    ownerDto.setCorreo(client.getCorreo());
+                    return ownerDto;
+                })
+                .collect(Collectors.toList());
+    }
+
     private PetResponseDto mapToResponseDto(Pet pet) {
         PetResponseDto dto = new PetResponseDto();
         dto.setPetId(pet.getPetId());
@@ -289,22 +316,10 @@ public class PetService {
         dto.setActivo(pet.getActivo());
         dto.setCreatedOn(pet.getCreatedOn());
 
-        // Mapear dueños
-        List<OwnerInfoDto> owners = petOwnerRepository.findByPetId(pet.getPetId())
-                .stream()
-                .map(po -> {
-                    User user = po.getUser();
-                    OwnerInfoDto ownerDto = new OwnerInfoDto();
-                    ownerDto.setUserId(user.getUserId());
-                    ownerDto.setName(user.getName());
-                    ownerDto.setIdent(user.getIdent());
-                    ownerDto.setTelefono(user.getTelefono());
-                    ownerDto.setCorreo(user.getCorreo());
-                    return ownerDto;
-                })
-                .collect(Collectors.toList());
+        // NO incluir owners en listados masivos para evitar N+1
+        // Los owners se pueden obtener con el endpoint específico: /api/pets/getOwners
+        dto.setOwners(new ArrayList<>());
         
-        dto.setOwners(owners);
         return dto;
     }
 }

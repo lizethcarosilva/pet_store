@@ -1,5 +1,6 @@
 package com.cipasuno.petstore.pet_store.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,6 +10,10 @@ import lombok.Setter;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
+/**
+ * Relación entre mascotas y sus propietarios (Clientes)
+ * Ahora solo asocia mascotas con clientes de la tabla client
+ */
 @Entity
 @Table(name = "pet_owner")
 @Getter
@@ -23,12 +28,19 @@ public class PetOwner {
     @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("petId")
     @JoinColumn(name = "pet_id")
+    @JsonIgnoreProperties({"owners", "hibernateLazyInitializer", "handler"})
     private Pet pet;
     
+    // Relación principal con Client (clientes de la tabla client)
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("userId")
-    @JoinColumn(name = "user_id")
-    private User user;
+    @MapsId("clientId")
+    @JoinColumn(name = "client_id")
+    @JsonIgnoreProperties({"pets", "hibernateLazyInitializer", "handler"})
+    private Client client;
+    
+    // user_id es opcional (legacy), ya no se usa
+    @Column(name = "user_id")
+    private Integer userId;
     
     @Column(name = "created_on", nullable = false, updatable = false)
     private LocalDateTime createdOn;
@@ -49,20 +61,20 @@ public class PetOwner {
         @Column(name = "pet_id")
         private Integer petId;
         
-        @Column(name = "user_id")
-        private Integer userId;
+        @Column(name = "client_id")
+        private Integer clientId;
         
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
             if (!(o instanceof PetOwnerId)) return false;
             PetOwnerId that = (PetOwnerId) o;
-            return petId.equals(that.petId) && userId.equals(that.userId);
+            return petId.equals(that.petId) && clientId.equals(that.clientId);
         }
         
         @Override
         public int hashCode() {
-            return 31 * petId.hashCode() + userId.hashCode();
+            return 31 * petId.hashCode() + clientId.hashCode();
         }
     }
 }

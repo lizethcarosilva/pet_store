@@ -22,7 +22,7 @@ public class Service {
     private Integer serviceId;
     
     @Column(name = "tenant_id", nullable = false)
-    private Integer tenantId;
+    private String tenantId;
     
     @Column(nullable = false)
     private String codigo;

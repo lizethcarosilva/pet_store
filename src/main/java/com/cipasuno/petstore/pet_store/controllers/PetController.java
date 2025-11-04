@@ -92,6 +92,19 @@ public class PetController {
         return ResponseEntity.ok(pets);
     }
 
+    @PostMapping("/getOwners")
+    @Operation(summary = "Obtener propietarios de una mascota por ID de mascota")
+    @RequiresRole({"SuperAdmin", "Admin", "Gerente", "Vendedor", "Cliente"})
+    public ResponseEntity<?> getOwnersByPetId(@RequestBody IdRequest request) {
+        try {
+            List<OwnerInfoDto> owners = petService.getOwnersByPetId(request.getId());
+            return ResponseEntity.ok(owners);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error al obtener los propietarios: " + e.getMessage());
+        }
+    }
+
     @PutMapping("/update")
     @Operation(summary = "Actualizar mascota")
     @RequiresRole({"SuperAdmin", "Admin", "Gerente"})

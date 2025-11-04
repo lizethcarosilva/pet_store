@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 public class AppointmentCreateDto {
     private Integer petId;
     private Integer serviceId;
-    private Integer userId; // Cliente que agenda
+    private Integer clientId; // Cliente que agenda
     private Integer veterinarianId; // Opcional
     private LocalDateTime fechaHora;
     private String observaciones;

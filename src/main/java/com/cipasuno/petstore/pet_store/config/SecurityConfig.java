@@ -31,6 +31,8 @@ public class SecurityConfig {
                 // Endpoints públicos
                 .requestMatchers("/api/users/login").permitAll()
                 .requestMatchers("/api/users/create").permitAll()
+                .requestMatchers("/api/admin/migrations/**").permitAll() // Debug y migraciones
+                .requestMatchers("/api/auth/debug/**").permitAll() // Debug de autenticación
                 
                 // Swagger y OpenAPI
                 .requestMatchers("/swagger-ui/**").permitAll()

@@ -14,13 +14,15 @@ import java.util.Optional;
 @Repository
 public interface InvoiceRepository extends JpaRepository<Invoice, Integer> {
     
+    @Query("SELECT i FROM Invoice i LEFT JOIN FETCH i.client LEFT JOIN FETCH i.employee WHERE i.activo = true")
     List<Invoice> findByActivoTrue();
     
     Optional<Invoice> findByNumero(String numero);
     
-    List<Invoice> findByEstado(String estado);
+    @Query("SELECT i FROM Invoice i LEFT JOIN FETCH i.client LEFT JOIN FETCH i.employee WHERE i.estado = :estado")
+    List<Invoice> findByEstado(@Param("estado") String estado);
     
-    @Query("SELECT i FROM Invoice i WHERE i.client.userId = :clientId AND i.activo = true ORDER BY i.fechaEmision DESC")
+    @Query("SELECT i FROM Invoice i WHERE i.client.clientId = :clientId AND i.activo = true ORDER BY i.fechaEmision DESC")
     List<Invoice> findByClientId(Integer clientId);
     
     @Query("SELECT i FROM Invoice i WHERE i.fechaEmision BETWEEN :inicio AND :fin AND i.activo = true ORDER BY i.fechaEmision DESC")
@@ -37,5 +39,9 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Integer> {
     
     @Query("SELECT MAX(CAST(SUBSTRING(i.numero, LENGTH(i.numero) - 5, 6) AS integer)) FROM Invoice i")
     Integer findMaxInvoiceNumber();
+    
+    // Query optimizada con JOIN FETCH para evitar LazyInitializationException
+    @Query("SELECT i FROM Invoice i LEFT JOIN FETCH i.client LEFT JOIN FETCH i.employee LEFT JOIN FETCH i.appointment")
+    List<Invoice> findAllWithRelations();
 }
 

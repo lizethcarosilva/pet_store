@@ -23,6 +23,9 @@ public class ProductResponseDto {
     private Integer stock;
     private Integer stockMinimo;
     private LocalDate fechaVencimiento;
+    private String lote; // Número de lote
+    private String fabricante; // Fabricante o marca
+    private Boolean esVacuna; // Indica si es una vacuna
     private Boolean activo;
     private LocalDateTime createdOn;
     private Boolean lowStock; // Calculado: stock < stockMinimo

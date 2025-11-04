@@ -1,5 +1,6 @@
 package com.cipasuno.petstore.pet_store.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -50,7 +51,8 @@ public class Pet {
     private LocalDateTime createdOn;
     
     // Relación muchos a muchos con User a través de PetOwner
-    @OneToMany(mappedBy = "pet", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "pet", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnoreProperties({"pet", "client", "hibernateLazyInitializer", "handler"})
     private Set<PetOwner> owners = new HashSet<>();
     
     @PrePersist

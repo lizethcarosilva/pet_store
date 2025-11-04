@@ -19,4 +19,7 @@ public class Roles {
     
     @Column(name = "name", nullable = false, length = 100)
     private String nombre;
+    
+    @Column(name = "descripcion", length = 255)
+    private String descripcion;
 }

@@ -13,9 +13,11 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class InvoiceDetailDto {
     private Integer detailId;
-    private String tipo; // PRODUCTO o SERVICIO
+    private String tipo; // PRODUCTO, SERVICIO, VACUNACION, CITA
     private Integer productId;
     private Integer serviceId;
+    private Integer vaccinationId; // ID de la vacunación a facturar
+    private Integer appointmentId; // ID de la cita a facturar (puede ser diferente de la cita general de la factura)
     private String itemNombre;
     private Integer cantidad;
     private BigDecimal precioUnitario;

@@ -21,6 +21,7 @@ public class RolePermissionAspect {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated()) {
+            System.out.println("🔴 No autenticado - Authentication is null or not authenticated");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of("error", "No autenticado"));
         }
@@ -31,11 +32,21 @@ public class RolePermissionAspect {
 
         String[] allowedRoles = requiresRole.value();
 
+        // 🔍 LOG DE DEPURACIÓN
+        System.out.println("🔍 Verificando permisos para: " + joinPoint.getSignature().getName());
+        System.out.println("   👤 Rol del usuario: '" + userRole + "'");
+        System.out.println("   ✅ Roles permitidos: " + Arrays.toString(allowedRoles));
+        System.out.println("   🎯 ¿Tiene permiso? " + Arrays.asList(allowedRoles).contains(userRole));
+
         if (!Arrays.asList(allowedRoles).contains(userRole)) {
+            System.out.println("🔴 ACCESO DENEGADO - Rol '" + userRole + "' no está en la lista de roles permitidos");
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(Map.of("error", "No tiene permisos para realizar esta acción"));
+                .body(Map.of("error", "No tiene permisos para realizar esta acción", 
+                             "userRole", userRole,
+                             "allowedRoles", Arrays.toString(allowedRoles)));
         }
 
+        System.out.println("✅ ACCESO PERMITIDO para " + userRole);
         return joinPoint.proceed();
     }
 }

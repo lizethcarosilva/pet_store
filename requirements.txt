@@ -1,0 +1,108 @@
+# =============================================================================
+# DEPENDENCIAS PARA PROYECTO PYTHON - PET STORE ANÁLISIS
+# =============================================================================
+# Para instalar: pip install -r requirements.txt
+
+# -----------------------------------------------------------------------------
+# Conexión a Base de Datos
+# -----------------------------------------------------------------------------
+psycopg2-binary==2.9.9        # PostgreSQL adapter
+sqlalchemy==2.0.23            # ORM y gestión de conexiones
+
+# -----------------------------------------------------------------------------
+# Procesamiento de Datos
+# -----------------------------------------------------------------------------
+pandas==2.1.4                 # Análisis y manipulación de datos
+numpy==1.26.2                 # Operaciones numéricas
+
+# -----------------------------------------------------------------------------
+# Machine Learning
+# -----------------------------------------------------------------------------
+scikit-learn==1.3.2          # Algoritmos de ML (clasificación, regresión)
+tensorflow==2.15.0           # Deep learning (redes neuronales)
+# torch==2.1.2               # PyTorch (alternativa a TensorFlow - descomentar si lo prefieres)
+keras==2.15.0                # API de alto nivel para redes neuronales
+
+# -----------------------------------------------------------------------------
+# NLP y Chatbot
+# -----------------------------------------------------------------------------
+transformers==4.36.2         # Modelos de lenguaje pre-entrenados (BERT, GPT)
+nltk==3.8.1                  # Natural Language Toolkit
+spacy==3.7.2                 # NLP avanzado
+# python -m spacy download es_core_news_sm  # Modelo en español (ejecutar después de instalar)
+
+# -----------------------------------------------------------------------------
+# Visualización de Datos
+# -----------------------------------------------------------------------------
+matplotlib==3.8.2            # Gráficos básicos
+seaborn==0.13.0              # Gráficos estadísticos
+plotly==5.18.0               # Gráficos interactivos
+
+# -----------------------------------------------------------------------------
+# Dashboard y Web Apps
+# -----------------------------------------------------------------------------
+streamlit==1.29.0            # Framework para dashboards interactivos
+# dash==2.14.2               # Alternativa a Streamlit (descomentar si lo prefieres)
+# dash-bootstrap-components==1.5.0
+
+# -----------------------------------------------------------------------------
+# Utilidades
+# -----------------------------------------------------------------------------
+python-dotenv==1.0.0         # Gestión de variables de entorno
+jupyter==1.0.0               # Notebooks interactivos
+jupyterlab==4.0.9            # Interfaz mejorada para Jupyter
+openpyxl==3.1.2              # Lectura/escritura de Excel
+requests==2.31.0             # Peticiones HTTP
+
+# -----------------------------------------------------------------------------
+# Análisis Temporal
+# -----------------------------------------------------------------------------
+prophet==1.1.5               # Forecasting de series temporales (Facebook)
+
+# -----------------------------------------------------------------------------
+# Visualización Avanzada
+# -----------------------------------------------------------------------------
+wordcloud==1.9.3             # Nubes de palabras
+pillow==10.1.0               # Procesamiento de imágenes
+
+# -----------------------------------------------------------------------------
+# Testing y Calidad de Código
+# -----------------------------------------------------------------------------
+pytest==7.4.3                # Testing
+black==23.12.1               # Formateo de código
+flake8==6.1.0                # Linting
+
+# -----------------------------------------------------------------------------
+# Optimización y Performance
+# -----------------------------------------------------------------------------
+joblib==1.3.2                # Serialización de modelos
+tqdm==4.66.1                 # Barras de progreso
+
+# =============================================================================
+# NOTAS DE INSTALACIÓN
+# =============================================================================
+# 
+# 1. Crear entorno virtual (recomendado):
+#    python -m venv venv
+#    
+# 2. Activar entorno virtual:
+#    Windows: venv\Scripts\activate
+#    Linux/Mac: source venv/bin/activate
+#
+# 3. Instalar dependencias:
+#    pip install -r requirements.txt
+#
+# 4. Instalar modelo de spaCy en español (para NLP):
+#    python -m spacy download es_core_news_sm
+#
+# 5. Verificar instalación:
+#    python -c "import pandas; import tensorflow; print('✅ Todo instalado correctamente')"
+#
+# =============================================================================
+# VERSIONES ALTERNATIVAS LIGERAS (si tienes problemas con las versiones completas)
+# =============================================================================
+# tensorflow-cpu==2.15.0     # Versión CPU (más ligera, sin GPU)
+# scikit-learn-intelex       # Optimización para scikit-learn en Intel
+#
+# =============================================================================
+

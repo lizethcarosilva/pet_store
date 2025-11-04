@@ -18,8 +18,8 @@ public interface PetRepository extends JpaRepository<Pet, Integer> {
     
     List<Pet> findByTipo(String tipo);
     
-    @Query("SELECT p FROM Pet p JOIN p.owners po WHERE po.user.userId = :userId AND p.activo = true")
-    List<Pet> findByOwnerId(Integer userId);
+    @Query("SELECT p FROM Pet p JOIN p.owners po WHERE po.client.clientId = :clientId AND p.activo = true")
+    List<Pet> findByOwnerId(Integer clientId);
     
     @Query("SELECT COUNT(p) FROM Pet p WHERE p.activo = true")
     long countActivePets();
@@ -33,5 +33,12 @@ public interface PetRepository extends JpaRepository<Pet, Integer> {
     
     @Query("SELECT p FROM Pet p WHERE p.tenantId = :tenantId AND LOWER(p.nombre) LIKE LOWER(CONCAT('%', :nombre, '%')) AND p.activo = true")
     List<Pet> findByTenantIdAndNombreContainingIgnoreCase(@Param("tenantId") String tenantId, @Param("nombre") String nombre);
+    
+    // Queries optimizadas con JOIN FETCH para evitar problema N+1
+    @Query("SELECT DISTINCT p FROM Pet p LEFT JOIN FETCH p.owners WHERE p.tenantId = :tenantId AND p.activo = true")
+    List<Pet> findAllByTenantIdWithOwners(@Param("tenantId") String tenantId);
+    
+    @Query("SELECT p FROM Pet p WHERE p.tenantId = :tenantId")
+    List<Pet> findAllByTenantId(@Param("tenantId") String tenantId);
 }
 

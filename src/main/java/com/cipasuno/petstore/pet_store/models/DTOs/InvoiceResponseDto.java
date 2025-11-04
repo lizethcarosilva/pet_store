@@ -20,6 +20,7 @@ public class InvoiceResponseDto {
     private String clientName;
     private Integer employeeId;
     private String employeeName;
+    private Integer appointmentId; // ID de la cita agendada (opcional)
     private LocalDateTime fechaEmision;
     private BigDecimal subtotal;
     private BigDecimal descuento;

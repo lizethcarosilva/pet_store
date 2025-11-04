@@ -1,5 +1,6 @@
 package com.cipasuno.petstore.pet_store.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -24,18 +25,25 @@ public class Invoice {
     private Integer invoiceId;
     
     @Column(name = "tenant_id", nullable = false)
-    private Integer tenantId;
+    private String tenantId;
     
     @Column(nullable = false)
     private String numero; // Número de factura
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "client_id", nullable = false) // Cliente
-    private User client;
+    @JsonIgnoreProperties({"pets", "hibernateLazyInitializer", "handler"})
+    private Client client;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employee_id") // Empleado que realiza la venta
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private User employee;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "appointment_id") // Cita agendada relacionada (opcional)
+    @JsonIgnoreProperties({"pet", "client", "service", "veterinarian", "hibernateLazyInitializer", "handler"})
+    private Appointment appointment; // Solo para servicios agendados (cita, baño, desparasitación, etc.)
     
     @Column(name = "fecha_emision", nullable = false)
     private LocalDateTime fechaEmision;
@@ -64,7 +72,8 @@ public class Invoice {
     @Column(name = "created_on", nullable = false, updatable = false)
     private LocalDateTime createdOn;
     
-    @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnoreProperties({"invoice", "hibernateLazyInitializer", "handler"})
     private List<InvoiceDetail> details = new ArrayList<>();
     
     @PrePersist

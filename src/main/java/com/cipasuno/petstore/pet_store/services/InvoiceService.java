@@ -1,18 +1,24 @@
 package com.cipasuno.petstore.pet_store.services;
 
+import com.cipasuno.petstore.pet_store.models.Appointment;
+import com.cipasuno.petstore.pet_store.models.Client;
 import com.cipasuno.petstore.pet_store.models.Invoice;
 import com.cipasuno.petstore.pet_store.models.InvoiceDetail;
 import com.cipasuno.petstore.pet_store.models.Product;
 import com.cipasuno.petstore.pet_store.models.Service;
 import com.cipasuno.petstore.pet_store.models.User;
+import com.cipasuno.petstore.pet_store.models.Vaccination;
 import com.cipasuno.petstore.pet_store.models.DTOs.InvoiceCreateDto;
 import com.cipasuno.petstore.pet_store.models.DTOs.InvoiceDetailDto;
 import com.cipasuno.petstore.pet_store.models.DTOs.InvoiceResponseDto;
+import com.cipasuno.petstore.pet_store.repositories.AppointmentRepository;
+import com.cipasuno.petstore.pet_store.repositories.ClientRepository;
 import com.cipasuno.petstore.pet_store.repositories.InvoiceDetailRepository;
 import com.cipasuno.petstore.pet_store.repositories.InvoiceRepository;
 import com.cipasuno.petstore.pet_store.repositories.ProductRepository;
 import com.cipasuno.petstore.pet_store.repositories.ServiceRepository;
 import com.cipasuno.petstore.pet_store.repositories.UserRepository;
+import com.cipasuno.petstore.pet_store.repositories.VaccinationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +40,9 @@ public class InvoiceService {
     private InvoiceDetailRepository invoiceDetailRepository;
 
     @Autowired
+    private ClientRepository clientRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Autowired
@@ -42,11 +51,20 @@ public class InvoiceService {
     @Autowired
     private ServiceRepository serviceRepository;
 
+    @Autowired
+    private AppointmentRepository appointmentRepository;
+
+    @Autowired
+    private VaccinationRepository vaccinationRepository;
+
     @Transactional
-    public InvoiceResponseDto createInvoice(InvoiceCreateDto invoiceDto) {
+    public InvoiceResponseDto createInvoice(InvoiceCreateDto invoiceDto, String tenantId) {
         Invoice invoice = new Invoice();
         
-        User client = userRepository.findById(invoiceDto.getClientId())
+        // Establecer tenantId
+        invoice.setTenantId(tenantId);
+        
+        Client client = clientRepository.findById(invoiceDto.getClientId())
             .orElseThrow(() -> new RuntimeException("Cliente no encontrado con ID: " + invoiceDto.getClientId()));
         
         invoice.setClient(client);
@@ -55,6 +73,19 @@ public class InvoiceService {
             User employee = userRepository.findById(invoiceDto.getEmployeeId())
                 .orElseThrow(() -> new RuntimeException("Empleado no encontrado con ID: " + invoiceDto.getEmployeeId()));
             invoice.setEmployee(employee);
+        }
+        
+        // Asignar cita agendada si se proporciona (solo para servicios agendados)
+        if (invoiceDto.getAppointmentId() != null) {
+            Appointment appointment = appointmentRepository.findById(invoiceDto.getAppointmentId())
+                .orElseThrow(() -> new RuntimeException("Cita no encontrada con ID: " + invoiceDto.getAppointmentId()));
+            
+            // Validar que la cita pertenece al cliente
+            if (!appointment.getClient().getClientId().equals(invoiceDto.getClientId())) {
+                throw new RuntimeException("La cita no pertenece al cliente especificado");
+            }
+            
+            invoice.setAppointment(appointment);
         }
         
         // Generar número de factura
@@ -70,6 +101,8 @@ public class InvoiceService {
         // Procesar detalles
         if (invoiceDto.getDetails() != null && !invoiceDto.getDetails().isEmpty()) {
             for (InvoiceDetailDto detailDto : invoiceDto.getDetails()) {
+                System.out.println("🟡 Procesando detalle tipo: " + detailDto.getTipo());
+                
                 InvoiceDetail detail = new InvoiceDetail();
                 detail.setInvoice(savedInvoice);
                 detail.setTipo(detailDto.getTipo());
@@ -98,6 +131,42 @@ public class InvoiceService {
                     
                     detail.setService(service);
                     detail.setPrecioUnitario(service.getPrecio());
+                    
+                } else if ("VACUNACION".equals(detailDto.getTipo())) {
+                    // 🔥 NUEVA FUNCIONALIDAD: Facturar vacunación
+                    System.out.println("🟡 Facturando vacunación ID: " + detailDto.getVaccinationId());
+                    
+                    Vaccination vaccination = vaccinationRepository.findById(detailDto.getVaccinationId())
+                        .orElseThrow(() -> new RuntimeException("Vacunación no encontrada con ID: " + detailDto.getVaccinationId()));
+                    
+                    System.out.println("🟡 Vacunación encontrada. Estado actual: " + vaccination.getEstado());
+                    
+                    // Establecer referencia a la vacunación
+                    detail.setVaccination(vaccination);
+                    detail.setPrecioUnitario(detailDto.getPrecioUnitario()); // El precio viene del frontend
+                    
+                    // 🔥 IMPORTANTE: Marcar la vacunación como FACTURADA automáticamente
+                    vaccination.setEstado("FACTURADA");
+                    vaccinationRepository.save(vaccination);
+                    System.out.println("✅ Vacunación " + vaccination.getVaccinationId() + " marcada como FACTURADA");
+                    
+                } else if ("CITA".equals(detailDto.getTipo())) {
+                    // 🔥 NUEVA FUNCIONALIDAD: Facturar cita
+                    System.out.println("🟡 Facturando cita ID: " + detailDto.getAppointmentId());
+                    
+                    Appointment appointment = appointmentRepository.findById(detailDto.getAppointmentId())
+                        .orElseThrow(() -> new RuntimeException("Cita no encontrada con ID: " + detailDto.getAppointmentId()));
+                    
+                    System.out.println("🟡 Cita encontrada. Estado actual: " + appointment.getEstado());
+                    
+                    // Establecer referencia a la cita
+                    detail.setAppointment(appointment);
+                    detail.setPrecioUnitario(detailDto.getPrecioUnitario()); // El precio viene del frontend
+                    
+                    // 🔥 IMPORTANTE: Marcar la cita como FACTURADA automáticamente
+                    appointment.setEstado("FACTURADA");
+                    appointmentRepository.save(appointment);
+                    System.out.println("✅ Cita " + appointment.getAppointmentId() + " marcada como FACTURADA");
                 }
                 
                 // Calcular subtotal del detalle
@@ -123,8 +192,22 @@ public class InvoiceService {
     }
 
     public List<InvoiceResponseDto> getAllInvoices() {
-        return invoiceRepository.findAll()
+        return invoiceRepository.findAllWithRelations()
                 .stream()
+                .filter(invoice -> {
+                    try {
+                        // Verificar que el cliente existe (evitar datos huérfanos)
+                        if (invoice.getClient() != null) {
+                            invoice.getClient().getName(); // Esto lanza exception si el client no existe
+                            return true;
+                        }
+                        return false;
+                    } catch (Exception e) {
+                        // Si hay error al acceder al cliente, filtrar esta factura
+                        System.err.println("⚠️  Factura " + invoice.getInvoiceId() + " tiene cliente huérfano, omitiendo...");
+                        return false;
+                    }
+                })
                 .map(this::mapToResponseDto)
                 .collect(Collectors.toList());
     }
@@ -132,6 +215,20 @@ public class InvoiceService {
     public List<InvoiceResponseDto> getActiveInvoices() {
         return invoiceRepository.findByActivoTrue()
                 .stream()
+                .filter(invoice -> {
+                    try {
+                        // Verificar que el cliente existe (evitar datos huérfanos)
+                        if (invoice.getClient() != null) {
+                            invoice.getClient().getName(); // Esto lanza exception si el client no existe
+                            return true;
+                        }
+                        return false;
+                    } catch (Exception e) {
+                        // Si hay error al acceder al cliente, filtrar esta factura
+                        System.err.println("⚠️  Factura " + invoice.getInvoiceId() + " tiene cliente huérfano, omitiendo...");
+                        return false;
+                    }
+                })
                 .map(this::mapToResponseDto)
                 .collect(Collectors.toList());
     }
@@ -241,12 +338,16 @@ public class InvoiceService {
         InvoiceResponseDto dto = new InvoiceResponseDto();
         dto.setInvoiceId(invoice.getInvoiceId());
         dto.setNumero(invoice.getNumero());
-        dto.setClientId(invoice.getClient().getUserId());
+        dto.setClientId(invoice.getClient().getClientId());
         dto.setClientName(invoice.getClient().getName());
         
         if (invoice.getEmployee() != null) {
             dto.setEmployeeId(invoice.getEmployee().getUserId());
             dto.setEmployeeName(invoice.getEmployee().getName());
+        }
+        
+        if (invoice.getAppointment() != null) {
+            dto.setAppointmentId(invoice.getAppointment().getAppointmentId());
         }
         
         dto.setFechaEmision(invoice.getFechaEmision());
@@ -259,12 +360,9 @@ public class InvoiceService {
         dto.setActivo(invoice.getActivo());
         dto.setCreatedOn(invoice.getCreatedOn());
         
-        // Cargar detalles
-        List<InvoiceDetailDto> detailDtos = invoiceDetailRepository.findByInvoiceId(invoice.getInvoiceId())
-                .stream()
-                .map(this::mapDetailToDto)
-                .collect(Collectors.toList());
-        dto.setDetails(detailDtos);
+        // NO incluir details en listados masivos para evitar N+1
+        // Los details se pueden obtener con el endpoint específico por ID
+        dto.setDetails(new java.util.ArrayList<>());
         
         return dto;
     }

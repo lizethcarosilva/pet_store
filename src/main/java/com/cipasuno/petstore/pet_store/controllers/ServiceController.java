@@ -1,5 +1,6 @@
 package com.cipasuno.petstore.pet_store.controllers;
 
+import com.cipasuno.petstore.pet_store.config.TenantContext;
 import com.cipasuno.petstore.pet_store.models.Service;
 import com.cipasuno.petstore.pet_store.models.DTOs.ServiceCreateDto;
 import com.cipasuno.petstore.pet_store.models.DTOs.ServiceResponseDto;
@@ -27,6 +28,20 @@ public class ServiceController {
     @Operation(summary = "Crear un nuevo servicio")
     public ResponseEntity<?> createService(@RequestBody ServiceCreateDto service) {
         try {
+            String tenantIdStr = TenantContext.getTenantId();
+            if (tenantIdStr == null || tenantIdStr.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Error: tenantId es requerido. Verifique que el header X-Tenant-ID esté presente.");
+            }
+
+            Integer tenantId;
+            try {
+                tenantId = Integer.parseInt(tenantIdStr);
+            } catch (NumberFormatException e) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Error: tenantId debe ser un número válido.");
+            }
+
             // Validar código único
             Optional<ServiceResponseDto> existingService = veterinaryService.getServiceByCodigo(service.getCodigo());
             if (existingService.isPresent()) {
@@ -34,7 +49,7 @@ public class ServiceController {
                     .body("Ya existe un servicio con este código: " + service.getCodigo());
             }
 
-            ServiceResponseDto createdService = veterinaryService.createService(service);
+            ServiceResponseDto createdService = veterinaryService.createService(service, tenantId);
             return ResponseEntity.status(HttpStatus.CREATED).body(createdService);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

@@ -20,8 +20,9 @@ public class ProductService {
     private ProductRepository productRepository;
 
     @Transactional
-    public ProductResponseDto createProduct(ProductCreateDto productDto) {
+    public ProductResponseDto createProduct(ProductCreateDto productDto, Integer tenantId) {
         Product product = new Product();
+        product.setTenantId(tenantId);
         product.setCodigo(productDto.getCodigo());
         product.setNombre(productDto.getNombre());
         product.setDescripcion(productDto.getDescripcion());
@@ -30,6 +31,9 @@ public class ProductService {
         product.setStock(productDto.getStock() != null ? productDto.getStock() : 0);
         product.setStockMinimo(productDto.getStockMinimo() != null ? productDto.getStockMinimo() : 5);
         product.setFechaVencimiento(productDto.getFechaVencimiento());
+        product.setLote(productDto.getLote());
+        product.setFabricante(productDto.getFabricante());
+        product.setEsVacuna(productDto.getEsVacuna() != null ? productDto.getEsVacuna() : false);
 
         Product savedProduct = productRepository.save(product);
         return mapToResponseDto(savedProduct);
@@ -114,6 +118,15 @@ public class ProductService {
         if (productDetails.getFechaVencimiento() != null) {
             product.setFechaVencimiento(productDetails.getFechaVencimiento());
         }
+        if (productDetails.getLote() != null) {
+            product.setLote(productDetails.getLote());
+        }
+        if (productDetails.getFabricante() != null) {
+            product.setFabricante(productDetails.getFabricante());
+        }
+        if (productDetails.getEsVacuna() != null) {
+            product.setEsVacuna(productDetails.getEsVacuna());
+        }
         if (productDetails.getActivo() != null) {
             product.setActivo(productDetails.getActivo());
         }
@@ -156,6 +169,24 @@ public class ProductService {
         return productRepository.countLowStockProducts();
     }
 
+    public List<ProductResponseDto> getVaccineProducts() {
+        return productRepository.findVaccineProducts()
+                .stream()
+                .map(this::mapToResponseDto)
+                .collect(Collectors.toList());
+    }
+
+    public List<ProductResponseDto> getAvailableVaccineProducts() {
+        return productRepository.findAvailableVaccineProducts()
+                .stream()
+                .map(this::mapToResponseDto)
+                .collect(Collectors.toList());
+    }
+
+    public long countVaccineProducts() {
+        return productRepository.countVaccineProducts();
+    }
+
     private ProductResponseDto mapToResponseDto(Product product) {
         ProductResponseDto dto = new ProductResponseDto();
         dto.setProductId(product.getProductId());
@@ -167,6 +198,9 @@ public class ProductService {
         dto.setStock(product.getStock());
         dto.setStockMinimo(product.getStockMinimo());
         dto.setFechaVencimiento(product.getFechaVencimiento());
+        dto.setLote(product.getLote());
+        dto.setFabricante(product.getFabricante());
+        dto.setEsVacuna(product.getEsVacuna());
         dto.setActivo(product.getActivo());
         dto.setCreatedOn(product.getCreatedOn());
         

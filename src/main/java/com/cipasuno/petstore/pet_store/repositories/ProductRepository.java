@@ -30,5 +30,15 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     
     @Query("SELECT COUNT(p) FROM Product p WHERE p.stock < p.stockMinimo AND p.activo = true")
     long countLowStockProducts();
+    
+    // Queries para vacunas
+    @Query("SELECT p FROM Product p WHERE p.esVacuna = true AND p.activo = true ORDER BY p.nombre")
+    List<Product> findVaccineProducts();
+    
+    @Query("SELECT p FROM Product p WHERE p.esVacuna = true AND p.stock > 0 AND p.activo = true ORDER BY p.nombre")
+    List<Product> findAvailableVaccineProducts();
+    
+    @Query("SELECT COUNT(p) FROM Product p WHERE p.esVacuna = true AND p.activo = true")
+    long countVaccineProducts();
 }
 

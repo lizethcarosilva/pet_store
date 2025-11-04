@@ -23,11 +23,11 @@ public class TenantUser {
 
     @Id
     @Column(name = "user_id")
-    private Integer userId;
+    private String userId;
 
     @Id
     @Column(name = "tenant_id")
-    private Integer tenantId;
+    private String tenantId;
 
     // Clase interna ESTÁTICA
     @Getter
@@ -35,8 +35,8 @@ public class TenantUser {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class TenantUserId implements Serializable {
-        private Integer userId;
-        private Integer tenantId;
+        private String userId;
+        private String tenantId;
         
         @Override
         public boolean equals(Object o) {

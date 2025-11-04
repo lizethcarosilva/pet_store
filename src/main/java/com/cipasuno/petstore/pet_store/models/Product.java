@@ -23,7 +23,7 @@ public class Product {
     private Integer productId;
     
     @Column(name = "tenant_id", nullable = false)
-    private Integer tenantId;
+    private String tenantId;
     
     @Column(nullable = false)
     private String codigo;
@@ -48,6 +48,15 @@ public class Product {
     @Column(name = "fecha_vencimiento")
     private LocalDate fechaVencimiento;
     
+    @Column(name = "lote", length = 100)
+    private String lote; // Número de lote del producto
+    
+    @Column(name = "fabricante", length = 200)
+    private String fabricante; // Fabricante o marca del producto
+    
+    @Column(name = "es_vacuna", nullable = false)
+    private Boolean esVacuna = false; // Indica si el producto es una vacuna
+    
     @Column(nullable = false)
     private Boolean activo = true;
     
@@ -67,6 +76,9 @@ public class Product {
         }
         if (stockMinimo == null) {
             stockMinimo = 5;
+        }
+        if (esVacuna == null) {
+            esVacuna = false;
         }
     }
 }
