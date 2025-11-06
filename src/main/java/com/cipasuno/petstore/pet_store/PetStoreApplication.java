@@ -15,7 +15,8 @@ public class PetStoreApplication {
 		
 		try {
 			Dotenv dotenv = Dotenv.configure()
-				.directory("./.env")
+				.directory(".")  // Buscar en el directorio actual
+				.ignoreIfMissing()  // No fallar si no existe
 				.load();
 			
 			System.out.println("Archivo .env encontrado y cargado exitosamente!");
