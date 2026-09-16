@@ -48,6 +48,26 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Intege
     // Query optimizada con JOIN FETCH para evitar LazyInitializationException
     @Query("SELECT a FROM Appointment a LEFT JOIN FETCH a.pet LEFT JOIN FETCH a.service LEFT JOIN FETCH a.client LEFT JOIN FETCH a.veterinarian")
     List<Appointment> findAllWithRelations();
+
+    /**
+     * Última cita activa por mascota (PostgreSQL). Misma forma de columnas que findOwnerDisplayRowsByPetIds.
+     */
+    @Query(value = """
+        SELECT DISTINCT ON (a.pet_id)
+            a.pet_id,
+            c.client_id,
+            NULL::integer AS uid,
+            COALESCE(NULLIF(TRIM(c.ident), ''), ''),
+            COALESCE(NULLIF(TRIM(c.name), ''), ''),
+            COALESCE(NULLIF(TRIM(c.telefono), ''), ''),
+            COALESCE(NULLIF(TRIM(c.correo), ''), '')
+        FROM appointment a
+        INNER JOIN client c ON c.client_id = a.client_id
+        WHERE a.pet_id IN (:petIds)
+          AND (a.activo IS NULL OR a.activo = true)
+        ORDER BY a.pet_id, a.fecha_hora DESC NULLS LAST
+        """, nativeQuery = true)
+    List<Object[]> findLatestClientRowByPetIds(@Param("petIds") List<Integer> petIds);
     
 }
 

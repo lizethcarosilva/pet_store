@@ -63,9 +63,9 @@ public class InvoiceController {
     }
 
     @GetMapping("/getId")
-    @Operation(summary = "Obtener factura por ID")
+    @Operation(summary = "Obtener factura por ID (incluye líneas de detalle)")
     @RequiresRole({"SuperAdmin", "Admin", "Gerente", "Empleado", "Vendedor"})
-    public ResponseEntity<?> getInvoiceById(@RequestBody Integer id) {
+    public ResponseEntity<?> getInvoiceById(@RequestParam Integer id) {
         Optional<InvoiceResponseDto> invoice = invoiceService.getInvoiceById(id);
         if (invoice.isPresent()) {
             return ResponseEntity.ok(invoice.get());

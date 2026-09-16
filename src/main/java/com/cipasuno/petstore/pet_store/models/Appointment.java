@@ -74,5 +74,6 @@ public class Appointment {
             estado = "PROGRAMADA";
         }
     }
+
 }
 

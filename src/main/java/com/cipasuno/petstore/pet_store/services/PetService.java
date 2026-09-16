@@ -7,6 +7,7 @@ import com.cipasuno.petstore.pet_store.models.DTOs.OwnerInfoDto;
 import com.cipasuno.petstore.pet_store.models.DTOs.PetCreateDto;
 import com.cipasuno.petstore.pet_store.models.DTOs.PetResponseDto;
 import com.cipasuno.petstore.pet_store.models.DTOs.UpdatePetRequest;
+import com.cipasuno.petstore.pet_store.repositories.AppointmentRepository;
 import com.cipasuno.petstore.pet_store.repositories.ClientRepository;
 import com.cipasuno.petstore.pet_store.repositories.PetOwnerRepository;
 import com.cipasuno.petstore.pet_store.repositories.PetRepository;
@@ -15,7 +16,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -30,6 +35,9 @@ public class PetService {
 
     @Autowired
     private ClientRepository clientRepository;
+
+    @Autowired
+    private AppointmentRepository appointmentRepository;
 
     @Transactional
     public PetResponseDto createPet(PetCreateDto petDto) {
@@ -97,24 +105,26 @@ public class PetService {
     }
 
     public List<PetResponseDto> getAllPets() {
-        return petRepository.findAll()
-                .stream()
-                .map(this::mapToResponseDto)
+        List<Pet> pets = petRepository.findAll();
+        Map<Integer, List<OwnerInfoDto>> ownersByPet = buildOwnersMapByPetIds(pets);
+        return pets.stream()
+                .map(p -> mapToResponseDto(p, ownersByPet))
                 .collect(Collectors.toList());
     }
 
     public List<PetResponseDto> getAllPetsByTenant(String tenantId) {
-        // Usar query optimizada sin JOIN FETCH para evitar N+1
-        return petRepository.findAllByTenantId(tenantId)
-                .stream()
-                .map(this::mapToResponseDto)
+        List<Pet> pets = petRepository.findAllByTenantId(tenantId);
+        Map<Integer, List<OwnerInfoDto>> ownersByPet = buildOwnersMapByPetIds(pets);
+        return pets.stream()
+                .map(p -> mapToResponseDto(p, ownersByPet))
                 .collect(Collectors.toList());
     }
 
     public List<PetResponseDto> getActivePets() {
-        return petRepository.findByActivoTrue()
-                .stream()
-                .map(this::mapToResponseDto)
+        List<Pet> pets = petRepository.findByActivoTrue();
+        Map<Integer, List<OwnerInfoDto>> ownersByPet = buildOwnersMapByPetIds(pets);
+        return pets.stream()
+                .map(p -> mapToResponseDto(p, ownersByPet))
                 .collect(Collectors.toList());
     }
 
@@ -129,23 +139,26 @@ public class PetService {
     }
 
     public List<PetResponseDto> searchPetsByName(String nombre) {
-        return petRepository.findByNombreContainingIgnoreCase(nombre)
-                .stream()
-                .map(this::mapToResponseDto)
+        List<Pet> pets = petRepository.findByNombreContainingIgnoreCase(nombre);
+        Map<Integer, List<OwnerInfoDto>> ownersByPet = buildOwnersMapByPetIds(pets);
+        return pets.stream()
+                .map(p -> mapToResponseDto(p, ownersByPet))
                 .collect(Collectors.toList());
     }
 
     public List<PetResponseDto> getPetsByType(String tipo) {
-        return petRepository.findByTipo(tipo)
-                .stream()
-                .map(this::mapToResponseDto)
+        List<Pet> pets = petRepository.findByTipo(tipo);
+        Map<Integer, List<OwnerInfoDto>> ownersByPet = buildOwnersMapByPetIds(pets);
+        return pets.stream()
+                .map(p -> mapToResponseDto(p, ownersByPet))
                 .collect(Collectors.toList());
     }
 
     public List<PetResponseDto> getPetsByOwnerId(Integer ownerId) {
-        return petRepository.findByOwnerId(ownerId)
-                .stream()
-                .map(this::mapToResponseDto)
+        List<Pet> pets = petRepository.findByOwnerId(ownerId);
+        Map<Integer, List<OwnerInfoDto>> ownersByPet = buildOwnersMapByPetIds(pets);
+        return pets.stream()
+                .map(p -> mapToResponseDto(p, ownersByPet))
                 .collect(Collectors.toList());
     }
 
@@ -282,28 +295,148 @@ public class PetService {
      * Obtiene todos los propietarios de una mascota por su ID
      */
     public List<OwnerInfoDto> getOwnersByPetId(Integer petId) {
-        // Verificar que la mascota existe
         if (!petRepository.existsById(petId)) {
             throw new RuntimeException("Mascota no encontrada con ID: " + petId);
         }
-        
-        return petOwnerRepository.findByPetId(petId)
-                .stream()
-                .filter(po -> po != null && po.getClient() != null) // Filtrar pet_owners huérfanos
-                .map(po -> {
-                    Client client = po.getClient();
-                    OwnerInfoDto ownerDto = new OwnerInfoDto();
-                    ownerDto.setUserId(client.getClientId()); // Ahora es clientId
-                    ownerDto.setName(client.getName());
-                    ownerDto.setIdent(client.getIdent());
-                    ownerDto.setTelefono(client.getTelefono());
-                    ownerDto.setCorreo(client.getCorreo());
-                    return ownerDto;
-                })
+        List<OwnerInfoDto> fromPo = loadOwnersFromPetOwnerRows(Collections.singletonList(petId));
+        if (!fromPo.isEmpty()) {
+            return fromPo;
+        }
+        return loadOwnersFromAppointmentFallback(Collections.singletonList(petId));
+    }
+
+    private List<OwnerInfoDto> loadOwnersFromPetOwnerRows(List<Integer> petIds) {
+        if (petIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Object[]> rows = petOwnerRepository.findOwnerDisplayRowsByPetIds(petIds);
+        return rows.stream()
+                .map(this::ownerRowToDto)
+                .filter(this::isOwnerDtoMeaningful)
                 .collect(Collectors.toList());
     }
 
+    private List<OwnerInfoDto> loadOwnersFromAppointmentFallback(List<Integer> petIds) {
+        if (petIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        try {
+            List<Object[]> rows = appointmentRepository.findLatestClientRowByPetIds(petIds);
+            return rows.stream()
+                    .map(this::ownerRowToDto)
+                    .filter(this::isOwnerDtoMeaningful)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
+    }
+
+    private OwnerInfoDto ownerRowToDto(Object[] r) {
+        OwnerInfoDto d = new OwnerInfoDto();
+        Integer cid = r.length > 1 ? numberToInt(r[1]) : null;
+        Integer uid = r.length > 2 ? numberToInt(r[2]) : null;
+        d.setUserId(cid != null ? cid : uid);
+        d.setIdent(strColumn(r.length > 3 ? r[3] : null));
+        d.setName(strColumn(r.length > 4 ? r[4] : null));
+        d.setTelefono(strColumn(r.length > 5 ? r[5] : null));
+        d.setCorreo(strColumn(r.length > 6 ? r[6] : null));
+        return d;
+    }
+
+    private static Integer numberToInt(Object o) {
+        if (o == null) {
+            return null;
+        }
+        if (o instanceof Number) {
+            return ((Number) o).intValue();
+        }
+        return null;
+    }
+
+    private static String strColumn(Object o) {
+        return o == null ? "" : o.toString().trim();
+    }
+
+    private boolean isOwnerDtoMeaningful(OwnerInfoDto d) {
+        if (d == null) {
+            return false;
+        }
+        if (d.getUserId() != null) {
+            return true;
+        }
+        return !d.getIdent().isEmpty() || !d.getName().isEmpty() || !d.getTelefono().isEmpty();
+    }
+
+    /**
+     * Dueños desde pet_owner (client y/o user legacy) y, si falta, último cliente en cita.
+     */
+    private Map<Integer, List<OwnerInfoDto>> buildOwnersMapByPetIds(List<Pet> pets) {
+        if (pets == null || pets.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<Integer> petIds = pets.stream()
+                .map(Pet::getPetId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+        if (petIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<Object[]> rows = petOwnerRepository.findOwnerDisplayRowsByPetIds(petIds);
+        Map<Integer, List<OwnerInfoDto>> map = new HashMap<>();
+        for (Object[] r : rows) {
+            if (r == null || r.length < 7 || r[0] == null) {
+                continue;
+            }
+            OwnerInfoDto dto = ownerRowToDto(r);
+            if (!isOwnerDtoMeaningful(dto)) {
+                continue;
+            }
+            int pid = ((Number) r[0]).intValue();
+            map.computeIfAbsent(pid, k -> new ArrayList<>()).add(dto);
+        }
+        List<Integer> stillMissing = petIds.stream()
+                .filter(id -> !map.containsKey(id) || map.get(id).isEmpty())
+                .collect(Collectors.toList());
+        if (!stillMissing.isEmpty()) {
+            try {
+                List<Object[]> fb = appointmentRepository.findLatestClientRowByPetIds(stillMissing);
+                for (Object[] r : fb) {
+                    if (r == null || r.length < 7 || r[0] == null) {
+                        continue;
+                    }
+                    OwnerInfoDto dto = ownerRowToDto(r);
+                    if (!isOwnerDtoMeaningful(dto)) {
+                        continue;
+                    }
+                    int pid = ((Number) r[0]).intValue();
+                    map.computeIfAbsent(pid, k -> new ArrayList<>()).add(dto);
+                }
+            } catch (Exception ignored) {
+                // DISTINCT ON / sintaxis solo PostgreSQL
+            }
+        }
+        return map;
+    }
+
     private PetResponseDto mapToResponseDto(Pet pet) {
+        PetResponseDto dto = mapToResponseDtoWithoutOwners(pet);
+        if (pet.getPetId() == null) {
+            dto.setOwners(new ArrayList<>());
+        } else {
+            dto.setOwners(getOwnersByPetId(pet.getPetId()));
+        }
+        return dto;
+    }
+
+    private PetResponseDto mapToResponseDto(Pet pet, Map<Integer, List<OwnerInfoDto>> ownersByPetId) {
+        PetResponseDto dto = mapToResponseDtoWithoutOwners(pet);
+        List<OwnerInfoDto> owners = ownersByPetId.getOrDefault(pet.getPetId(), Collections.emptyList());
+        dto.setOwners(new ArrayList<>(owners));
+        return dto;
+    }
+
+    private PetResponseDto mapToResponseDtoWithoutOwners(Pet pet) {
         PetResponseDto dto = new PetResponseDto();
         dto.setPetId(pet.getPetId());
         dto.setNombre(pet.getNombre());
@@ -315,11 +448,6 @@ public class PetService {
         dto.setColor(pet.getColor());
         dto.setActivo(pet.getActivo());
         dto.setCreatedOn(pet.getCreatedOn());
-
-        // NO incluir owners en listados masivos para evitar N+1
-        // Los owners se pueden obtener con el endpoint específico: /api/pets/getOwners
-        dto.setOwners(new ArrayList<>());
-        
         return dto;
     }
 }

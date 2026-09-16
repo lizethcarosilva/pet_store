@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -188,7 +189,7 @@ public class InvoiceService {
         savedInvoice.setTotal(total);
         
         Invoice finalInvoice = invoiceRepository.save(savedInvoice);
-        return mapToResponseDto(finalInvoice);
+        return mapToResponseDto(finalInvoice, true);
     }
 
     public List<InvoiceResponseDto> getAllInvoices() {
@@ -233,14 +234,16 @@ public class InvoiceService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public Optional<InvoiceResponseDto> getInvoiceById(Integer id) {
         return invoiceRepository.findById(id)
-                .map(this::mapToResponseDto);
+                .map(inv -> mapToResponseDto(inv, true));
     }
 
+    @Transactional(readOnly = true)
     public Optional<InvoiceResponseDto> getInvoiceByNumero(String numero) {
         return invoiceRepository.findByNumero(numero)
-                .map(this::mapToResponseDto);
+                .map(inv -> mapToResponseDto(inv, true));
     }
 
     public List<InvoiceResponseDto> getInvoicesByClientId(Integer clientId) {
@@ -335,6 +338,10 @@ public class InvoiceService {
     }
 
     private InvoiceResponseDto mapToResponseDto(Invoice invoice) {
+        return mapToResponseDto(invoice, false);
+    }
+
+    private InvoiceResponseDto mapToResponseDto(Invoice invoice, boolean includeDetails) {
         InvoiceResponseDto dto = new InvoiceResponseDto();
         dto.setInvoiceId(invoice.getInvoiceId());
         dto.setNumero(invoice.getNumero());
@@ -360,9 +367,12 @@ public class InvoiceService {
         dto.setActivo(invoice.getActivo());
         dto.setCreatedOn(invoice.getCreatedOn());
         
-        // NO incluir details en listados masivos para evitar N+1
-        // Los details se pueden obtener con el endpoint específico por ID
-        dto.setDetails(new java.util.ArrayList<>());
+        if (includeDetails) {
+            List<InvoiceDetail> detailRows = invoiceDetailRepository.findByInvoiceId(invoice.getInvoiceId());
+            dto.setDetails(detailRows.stream().map(this::mapDetailToDto).collect(Collectors.toList()));
+        } else {
+            dto.setDetails(new ArrayList<>());
+        }
         
         return dto;
     }
@@ -382,6 +392,18 @@ public class InvoiceService {
         } else if ("SERVICIO".equals(detail.getTipo()) && detail.getService() != null) {
             dto.setServiceId(detail.getService().getServiceId());
             dto.setItemNombre(detail.getService().getNombre());
+        } else if ("VACUNACION".equals(detail.getTipo()) && detail.getVaccination() != null) {
+            Vaccination v = detail.getVaccination();
+            dto.setVaccinationId(v.getVaccinationId());
+            String petLabel = (v.getPet() != null) ? v.getPet().getNombre() : "mascota";
+            dto.setItemNombre("Vacunación: " + v.getVaccineName() + " (" + petLabel + ")");
+        } else if ("CITA".equals(detail.getTipo()) && detail.getAppointment() != null) {
+            Appointment a = detail.getAppointment();
+            dto.setAppointmentId(a.getAppointmentId());
+            String svc = (a.getService() != null) ? a.getService().getNombre() : "Servicio";
+            dto.setItemNombre("Cita: " + svc);
+        } else {
+            dto.setItemNombre(detail.getTipo() != null ? detail.getTipo() : "Ítem");
         }
         
         return dto;
